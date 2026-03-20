@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SBCS — Soulbound Credit Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0b0f;
+  --bg2: #10121a;
+  --bg3: #181c28;
+  --border: rgba(100,120,200,0.15);
+  --border2: rgba(100,120,200,0.28);
+  --accent: #6C63FF;
+  --accent2: #00F5C4;
+  --accent3: #FF6B6B;
+  --text: #E8EAF6;
+  --muted: #7B82A8;
+  --card-bg: #12151f;
+  --good: #00F5C4;
+  --warn: #FFB347;
+  --danger: #FF6B6B;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+/* Grid noise texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+.app { position: relative; z-index: 1; }
+
+/* NAV */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 40px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,11,15,0.85);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo { font-family: 'Space Mono', monospace; font-size: 15px; letter-spacing: 2px; color: var(--accent); font-weight: 700; }
+.logo span { color: var(--accent2); }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.wallet-badge {
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 7px 14px; color: var(--muted);
+  cursor: pointer; transition: border-color 0.2s;
+}
+.wallet-badge:hover { border-color: var(--accent); color: var(--text); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; margin-right: 8px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.85)} }
+
+/* HERO */
+.hero { display: grid; grid-template-columns: 1fr 340px; gap: 32px; padding: 48px 40px 32px; }
+.hero-left {}
+.hero-label { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 3px; color: var(--accent2); text-transform: uppercase; margin-bottom: 12px; }
+.hero-title { font-size: 38px; font-weight: 600; line-height: 1.18; margin-bottom: 16px; }
+.hero-title em { font-style: normal; color: var(--accent); }
+.hero-sub { color: var(--muted); font-size: 15px; line-height: 1.65; max-width: 520px; margin-bottom: 32px; }
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--accent); color: #fff; border: none;
+  padding: 12px 28px; border-radius: 8px; font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.15s;
+}
+.btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent; color: var(--text);
+  border: 1px solid var(--border2); padding: 12px 28px; border-radius: 8px;
+  font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.btn-secondary:hover { background: var(--bg3); border-color: var(--accent); }
+
+/* SCORE RING */
+.score-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px; display: flex; flex-direction: column; align-items: center;
+}
+.score-ring-wrap { position: relative; width: 180px; height: 180px; margin-bottom: 16px; }
+.score-ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.score-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.score-num { font-family: 'Space Mono', monospace; font-size: 40px; font-weight: 700; color: var(--accent2); }
+.score-max { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.score-label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+.score-grade { font-size: 20px; font-weight: 600; color: var(--good); }
+.tier-row { display: flex; gap: 8px; margin-top: 16px; width: 100%; }
+.tier-chip {
+  flex: 1; text-align: center; padding: 6px 4px; border-radius: 6px;
+  font-size: 11px; font-family: 'Space Mono', monospace; border: 1px solid var(--border);
+  color: var(--muted); background: var(--bg3);
+}
+.tier-chip.active { border-color: var(--accent2); color: var(--accent2); background: rgba(0,245,196,0.08); }
+
+/* STATS ROW */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 0 40px 32px; }
+.stat-card {
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--border2); }
+.stat-card-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.stat-card-val { font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; color: var(--text); }
+.stat-card-sub { font-size: 12px; margin-top: 6px; }
+.pos { color: var(--good); }
+.neg { color: var(--danger); }
+.neu { color: var(--warn); }
+
+/* MAIN CONTENT */
+.main-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; padding: 0 40px 48px; }
+
+/* TABS */
+.tabs { display: flex; gap: 2px; margin-bottom: 20px; background: var(--bg3); border-radius: 8px; padding: 4px; border: 1px solid var(--border); }
+.tab {
+  flex: 1; padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+  cursor: pointer; text-align: center; color: var(--muted); transition: all 0.2s; border: none; background: none;
+}
+.tab.active { background: var(--accent); color: #fff; }
+
+/* GRAPH AREA */
+.graph-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 24px; }
+.graph-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.graph-title { font-size: 14px; font-weight: 600; }
+.graph-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.graph-canvas { position: relative; height: 180px; }
+canvas#scoreChart { width: 100% !important; height: 100% !important; }
+
+/* GNN NODE GRAPH */
+.gnn-canvas { width: 100%; height: 220px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+
+/* LOAN OFFERS */
+.loan-card {
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px;
+  display: flex; align-items: center; gap: 16px; margin-bottom: 12px;
+  transition: border-color 0.2s, transform 0.15s; cursor: pointer;
+}
+.loan-card:hover { border-color: var(--accent); transform: translateX(3px); }
+.loan-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.loan-info { flex: 1; }
+.loan-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.loan-detail { font-size: 12px; color: var(--muted); }
+.loan-apy { text-align: right; }
+.loan-apy-val { font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700; color: var(--good); }
+.loan-apy-label { font-size: 11px; color: var(--muted); }
+.loan-badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
+.badge-best { background: rgba(0,245,196,0.1); color: var(--good); border: 1px solid rgba(0,245,196,0.25); }
+
+/* ZK PROOF PANEL */
+.zk-panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+.zk-title { font-size: 13px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.zk-badge { font-size: 10px; background: rgba(108,99,255,0.15); color: var(--accent); border: 1px solid rgba(108,99,255,0.3); padding: 2px 8px; border-radius: 4px; font-family: 'Space Mono', monospace; }
+.zk-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+.zk-step:last-child { margin-bottom: 0; }
+.zk-line { display: flex; flex-direction: column; align-items: center; margin-top: 4px; }
+.zk-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.zk-connector { width: 1px; height: 24px; background: var(--border2); }
+.zk-step:last-child .zk-connector { display: none; }
+.zk-step-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+.zk-step-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.zk-hash { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--accent); background: rgba(108,99,255,0.08); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; margin-top: 6px; word-break: break-all; }
+
+/* SIDEBAR */
+.sidebar {}
+.side-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 20px; }
+.side-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+.factor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.factor-label { font-size: 13px; flex: 1; }
+.factor-bar-bg { flex: 2; height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.factor-bar { height: 100%; border-radius: 3px; transition: width 1s ease; }
+.factor-val { font-size: 12px; font-family: 'Space Mono', monospace; color: var(--muted); min-width: 32px; text-align: right; }
+
+/* HISTORY */
+.hist-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.hist-row:last-child { border-bottom: none; }
+.hist-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.hist-info { flex: 1; }
+.hist-name { font-size: 13px; font-weight: 500; }
+.hist-time { font-size: 11px; color: var(--muted); }
+.hist-amount { font-family: 'Space Mono', monospace; font-size: 13px; text-align: right; }
+
+/* FOOTER TAG */
+.footer { text-align: center; padding: 24px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); }
+.footer span { color: var(--accent); }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2,1fr); }
+  .main-grid { grid-template-columns: 1fr; }
+  nav { padding: 14px 20px; }
+  .hero, .stats-row, .main-grid { padding-left: 20px; padding-right: 20px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- NAV -->
+<nav>
+  <div class="logo">SOUL<span>BOUND</span> CREDIT</div>
+  <div class="nav-right">
+    <div class="wallet-badge"><span class="status-dot"></span>0x3f4a...d91c</div>
+    <button class="btn-primary" style="padding:8px 18px;font-size:13px">Connect Wallet</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-label">Decentralized Identity Protocol</div>
+    <h1 class="hero-title">Your On-Chain<br/><em>Reputation</em> Is<br/>Your Collateral</h1>
+    <p class="hero-sub">SBCS uses a Decentralized Graph Neural Network to compute a privacy-preserving credit score from your on-chain behavioral history — verified by ZK-Proofs on-chain.</p>
+    <div class="cta-row">
+      <button class="btn-primary">Generate My Score</button>
+      <button class="btn-secondary">View Protocol Docs</button>
+    </div>
+  </div>
+
+  <!-- SCORE RING PANEL -->
+  <div class="score-panel">
+    <div class="score-label">Soulbound Credit Score</div>
+    <div class="score-ring-wrap">
+      <svg viewBox="0 0 180 180">
+        <circle cx="90" cy="90" r="72" fill="none" stroke="rgba(108,99,255,0.12)" stroke-width="12"/>
+        <circle id="scoreArc" cx="90" cy="90" r="72" fill="none"
+          stroke="url(#arcGrad)" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="452" stroke-dashoffset="113"
+          style="transition: stroke-dashoffset 1.5s ease"/>
+        <defs>
+          <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#6C63FF"/>
+            <stop offset="100%" stop-color="#00F5C4"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="score-center">
+        <div class="score-num" id="scoreNum">741</div>
+        <div class="score-max">/ 850</div>
+      </div>
+    </div>
+    <div class="score-grade">A+ Tier · Verified</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px;text-align:center;">ZK-Proof verified on-chain ✓</div>
+    <div class="tier-row">
+      <div class="tier-chip">D</div>
+      <div class="tier-chip">C</div>
+      <div class="tier-chip">B</div>
+      <div class="tier-chip active">A+</div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS ROW -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-card-label">Borrowing Limit</div>
+    <div class="stat-card-val">$48,200</div>
+    <div class="stat-card-sub pos">↑ $12,400 this month</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Active Loans</div>
+    <div class="stat-card-val">3</div>
+    <div class="stat-card-sub neu">$18,500 outstanding</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Repayment Ratio</div>
+    <div class="stat-card-val">98.7%</div>
+    <div class="stat-card-sub pos">↑ Lifetime average</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Graph Connections</div>
+    <div class="stat-card-val">1,247</div>
+    <div class="stat-card-sub neu">Verified identities</div>
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+  <div>
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(this,'score')">Score History</button>
+      <button class="tab" onclick="switchTab(this,'identity')">Identity Graph</button>
+      <button class="tab" onclick="switchTab(this,'loans')">Loan Offers</button>
+      <button class="tab" onclick="switchTab(this,'zkproof')">ZK Proof</button>
+    </div>
+
+    <!-- SCORE TAB -->
+    <div id="tab-score">
+      <div class="graph-card">
+        <div class="graph-header">
+          <div>
+            <div class="graph-title">Credit Score Trajectory</div>
+            <div class="graph-meta">90-day on-chain behavioral analysis · GNN model v2.1</div>
+          </div>
+          <select style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">
+            <option>90 days</option><option>30 days</option><option>1 year</option>
+          </select>
+        </div>
+        <div class="graph-canvas">
+          <canvas id="scoreChart"></canvas>
+        </div>
+      </div>
+
+      <!-- FACTOR BREAKDOWN -->
+      <div class="graph-card">
+        <div class="graph-title" style="margin-bottom:20px">Score Factor Breakdown</div>
+        <div id="factors"></div>
+      </div>
+    </div>
+
+    <!-- IDENTITY GRAPH TAB -->
+    <div id="tab-identity" style="display:none">
+      <div class="graph-card">
+        <div class="graph-header">
+          <div>
+            <div class="graph-title">Soulbound Identity Graph</div>
+            <div class="graph-meta">GNN-analyzed wallet relationships · Hover to explore</div>
+          </div>
+        </div>
+        <canvas id="gnnCanvas" width="680" height="300" style="width:100%;height:300px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:block;"></canvas>
+      </div>
+    </div>
+
+    <!-- LOANS TAB -->
+    <div id="tab-loans" style="display:none">
+      <div class="graph-card">
+        <div class="graph-title" style="margin-bottom:20px">Available Loan Offers · Based on SBCS 741</div>
+        <div id="loan-list"></div>
+      </div>
+    </div>
+
+    <!-- ZK PROOF TAB -->
+    <div id="tab-zkproof" style="display:none">
+      <div class="graph-card">
+        <div class="graph-title" style="margin-bottom:4px">Zero-Knowledge Proof Verification Pipeline</div>
+        <div class="graph-meta" style="margin-bottom:20px">Your private data never leaves your device — only the proof is submitted on-chain</div>
+        <div id="zk-steps"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="side-card">
+      <div class="side-title">Recent Activity</div>
+      <div id="history-list"></div>
+    </div>
+    <div class="side-card">
+      <div class="side-title">Score Signals</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">What's influencing your score today</div>
+      <div id="signals"></div>
+    </div>
+    <div class="side-card" style="background:rgba(108,99,255,0.06);border-color:rgba(108,99,255,0.25);">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">💡 Score Tip</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;">Participating in 2+ governance votes this month could increase your score by <strong style="color:var(--accent2)">+18 points</strong>, unlocking the Elite tier.</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Built with <span>Soulbound Credit Protocol</span> · Graph Neural Network v2.1 · ZK-SNARK verified · Powered by Ethereum</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// --- Score History Chart ---
+const ctx = document.getElementById('scoreChart').getContext('2d');
+const days = Array.from({length:90},(_,i)=>{
+  const d=new Date(); d.setDate(d.getDate()-89+i);
+  return d.toLocaleDateString('en',{month:'short',day:'numeric'});
+});
+const scores = (() => {
+  let s=610, arr=[];
+  for(let i=0;i<90;i++){
+    s += (Math.random()-0.35)*6 + 1.5;
+    s = Math.min(850, Math.max(580, s));
+    arr.push(Math.round(s));
+  }
+  arr[89]=741; return arr;
+})();
+
+new Chart(ctx, {
+  type:'line',
+  data:{
+    labels: days.filter((_,i)=>i%10===0||i===89),
+    datasets:[{
+      data: scores.filter((_,i)=>i%10===0||i===89),
+      borderColor:'#6C63FF',
+      backgroundColor:'rgba(108,99,255,0.08)',
+      borderWidth:2.5,
+      pointBackgroundColor:'#00F5C4',
+      pointRadius:3,
+      pointHoverRadius:6,
+      fill:true,
+      tension:0.45
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{
+      backgroundColor:'#181c28', borderColor:'rgba(100,120,200,0.3)', borderWidth:1,
+      titleColor:'#E8EAF6', bodyColor:'#7B82A8',
+      callbacks:{ label: ctx => ` Score: ${ctx.parsed.y}` }
+    }},
+    scales:{
+      x:{ grid:{color:'rgba(100,120,200,0.06)'}, ticks:{color:'#7B82A8',font:{size:11}} },
+      y:{ min:580, max:860, grid:{color:'rgba(100,120,200,0.06)'}, ticks:{color:'#7B82A8',font:{size:11}} }
+    }
+  }
+});
+
+// --- Factor Breakdown ---
+const factors = [
+  {name:'Repayment History', val:96, color:'#00F5C4'},
+  {name:'Governance Participation', val:72, color:'#6C63FF'},
+  {name:'Network Centrality (GNN)', val:81, color:'#6C63FF'},
+  {name:'Liquidation History', val:100, color:'#00F5C4'},
+  {name:'Fund Velocity Pattern', val:68, color:'#FFB347'},
+  {name:'Sybil Resistance Score', val:89, color:'#00F5C4'},
+];
+const fEl = document.getElementById('factors');
+factors.forEach(f=>{
+  fEl.innerHTML += `
+    <div class="factor-row">
+      <div class="factor-label">${f.name}</div>
+      <div class="factor-bar-bg"><div class="factor-bar" style="width:${f.val}%;background:${f.color}"></div></div>
+      <div class="factor-val">${f.val}</div>
+    </div>`;
+});
+
+// --- GNN Identity Graph ---
+function drawGraph() {
+  const canvas = document.getElementById('gnnCanvas');
+  if(!canvas) return;
+  const c = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  c.clearRect(0,0,W,H);
+
+  const nodes = [
+    {x:340,y:150,r:18,main:true,label:'You'},
+    {x:180,y:80,r:12,trust:0.9,label:'DeFi DAO'},
+    {x:480,y:70,r:10,trust:0.75,label:'Verified'},
+    {x:160,y:200,r:11,trust:0.85,label:'LP Pool'},
+    {x:500,y:210,r:9,trust:0.6,label:'Trader'},
+    {x:90,y:140,r:8,trust:0.55,label:'Anon'},
+    {x:580,y:140,r:13,trust:0.8,label:'Protocol'},
+    {x:280,y:240,r:9,trust:0.7,label:'Wallet'},
+    {x:420,y:250,r:10,trust:0.65,label:'Staker'},
+    {x:340,y:60,r:8,trust:0.5,label:'Bridge'},
+  ];
+
+  const edges = [
+    [0,1,0.9],[0,2,0.75],[0,3,0.85],[0,4,0.6],[0,5,0.55],[0,6,0.8],[0,7,0.7],[0,8,0.65],[0,9,0.5],
+    [1,5,0.6],[1,3,0.7],[2,6,0.75],[6,4,0.5],[7,8,0.55]
+  ];
+
+  edges.forEach(([a,b,w])=>{
+    const na=nodes[a], nb=nodes[b];
+    const grad=c.createLinearGradient(na.x,na.y,nb.x,nb.y);
+    grad.addColorStop(0,'rgba(108,99,255,'+(w*0.7)+')');
+    grad.addColorStop(1,'rgba(0,245,196,'+(w*0.5)+')');
+    c.beginPath(); c.moveTo(na.x,na.y); c.lineTo(nb.x,nb.y);
+    c.strokeStyle=grad; c.lineWidth=w*2.5; c.stroke();
+  });
+
+  nodes.forEach((n,i)=>{
+    const color = n.main ? '#6C63FF' : (n.trust>0.8?'#00F5C4':n.trust>0.65?'#6C63FF':'#7B82A8');
+    c.beginPath(); c.arc(n.x,n.y,n.r,0,Math.PI*2);
+    c.fillStyle = n.main?'rgba(108,99,255,0.25)':'rgba(0,0,0,0)'; c.fill();
+    c.strokeStyle=color; c.lineWidth=n.main?2.5:1.5; c.stroke();
+
+    if(n.main){
+      c.beginPath(); c.arc(n.x,n.y,n.r*1.6,0,Math.PI*2);
+      c.strokeStyle='rgba(108,99,255,0.2)'; c.lineWidth=1; c.setLineDash([4,4]); c.stroke();
+      c.setLineDash([]);
+    }
+
+    c.fillStyle=n.main?'#E8EAF6':'#7B82A8';
+    c.font=`${n.main?'600 ':''}${n.main?13:10}px DM Sans`;
+    c.textAlign='center'; c.fillText(n.label, n.x, n.y+n.r+13);
+  });
+}
+
+// --- Loan Offers ---
+const loans = [
+  {name:'Aave V4 Protocol', detail:'Under-collateralized · 60% LTV', apy:4.2, icon:'🅰️', bg:'rgba(108,99,255,0.1)', best:true},
+  {name:'Compound Finance', detail:'Standard lending pool', apy:5.8, icon:'🅲', bg:'rgba(0,245,196,0.08)', best:false},
+  {name:'Euler Labs', detail:'Risk-managed under-coll.', apy:6.1, icon:'Ξ', bg:'rgba(255,107,107,0.08)', best:false},
+  {name:'Morpho Blue', detail:'Peer-to-peer matching', apy:3.9, icon:'🔵', bg:'rgba(255,179,71,0.08)', best:false},
+];
+const ll = document.getElementById('loan-list');
+loans.forEach(l=>{
+  ll.innerHTML+=`
+  <div class="loan-card">
+    <div class="loan-icon" style="background:${l.bg}">${l.icon}</div>
+    <div class="loan-info">
+      <div class="loan-name">${l.name}${l.best?'<span class="loan-badge badge-best">Best Rate</span>':''}</div>
+      <div class="loan-detail">${l.detail}</div>
+    </div>
+    <div class="loan-apy">
+      <div class="loan-apy-val">${l.apy}%</div>
+      <div class="loan-apy-label">APY</div>
+    </div>
+  </div>`;
+});
+
+// --- ZK Proof Steps ---
+const zkSteps = [
+  {name:'Off-chain GNN Inference', desc:'GNN processes your wallet graph locally. Raw behavioral data never leaves your device.', hash:'0xa3f...b92', color:'#6C63FF'},
+  {name:'Proof Generation (ZK-SNARK)', desc:'A ZK-SNARK proof is computed that certifies the model ran correctly on your private data.', hash:'0x7d1...e44', color:'#9B8FFF'},
+  {name:'On-chain Proof Verification', desc:'Smart contract verifies the ZK proof. If valid, the score is minted as a Soulbound token.', hash:'0xf93...c11', color:'#00C9A7'},
+  {name:'Soulbound Token Mint', desc:'Non-transferable ERC-5192 token with your score is issued to your address and cannot be moved.', hash:'0x2b8...d77', color:'#00F5C4'},
+];
+const zk = document.getElementById('zk-steps');
+zkSteps.forEach((s,i)=>{
+  zk.innerHTML+=`
+  <div class="zk-step">
+    <div class="zk-line">
+      <div class="zk-dot" style="background:${s.color}"></div>
+      <div class="zk-connector"></div>
+    </div>
+    <div>
+      <div class="zk-step-name">${i+1}. ${s.name}</div>
+      <div class="zk-step-desc">${s.desc}</div>
+      <div class="zk-hash">${s.hash}</div>
+    </div>
+  </div>`;
+});
+
+// --- History ---
+const history = [
+  {icon:'💸',bg:'rgba(0,245,196,0.1)',name:'Loan Repaid',time:'2h ago',amount:'+$2,400',pos:true},
+  {icon:'🗳️',bg:'rgba(108,99,255,0.1)',name:'Governance Vote',time:'1d ago',amount:'+8 pts',pos:true},
+  {icon:'🏊',bg:'rgba(255,179,71,0.1)',name:'LP Position Added',time:'3d ago',amount:'$5,000',pos:null},
+  {icon:'📊',bg:'rgba(108,99,255,0.1)',name:'Score Refreshed',time:'5d ago',amount:'741 pts',pos:null},
+  {icon:'💰',bg:'rgba(0,245,196,0.1)',name:'Borrow Executed',time:'1w ago',amount:'-$8,000',pos:false},
+];
+const hl = document.getElementById('history-list');
+history.forEach(h=>{
+  hl.innerHTML+=`
+  <div class="hist-row">
+    <div class="hist-icon" style="background:${h.bg}">${h.icon}</div>
+    <div class="hist-info">
+      <div class="hist-name">${h.name}</div>
+      <div class="hist-time">${h.time}</div>
+    </div>
+    <div class="hist-amount" style="color:${h.pos===true?'var(--good)':h.pos===false?'var(--danger)':'var(--muted)'}">${h.amount}</div>
+  </div>`;
+});
+
+// --- Signals ---
+const signals = [
+  {text:'✅ No liquidations in 180 days',color:'var(--good)'},
+  {text:'✅ 4 governance votes last month',color:'var(--good)'},
+  {text:'⚠️ High fund velocity this week',color:'var(--warn)'},
+  {text:'✅ 12 verified co-signers',color:'var(--good)'},
+  {text:'⚠️ New wallet interactions unverified',color:'var(--warn)'},
+];
+const sg = document.getElementById('signals');
+signals.forEach(s=>{
+  sg.innerHTML+=`<div style="font-size:12px;color:${s.color};padding:6px 0;border-bottom:1px solid var(--border);line-height:1.5">${s.text}</div>`;
+});
+
+// --- Tab Switching ---
+function switchTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['score','identity','loans','zkproof'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=(t===tab?'block':'none');
+  });
+  if(tab==='identity') setTimeout(drawGraph,50);
+}
+
+// Animate score ring on load
+setTimeout(()=>{
+  const arc = document.getElementById('scoreArc');
+  // 741/850 = 0.872 of circumference (452), offset = 452 * (1 - 0.872) = 58
+  arc.style.strokeDashoffset = 58;
+}, 300);
+</script>
+</body>
+</html>
